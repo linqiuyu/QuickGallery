@@ -1,8 +1,11 @@
 <?php
+require_once 'functions.php';
+
 $gallery = isset($_GET['gallery']) ? $_GET['gallery'] : '.';
 // Removes all forward slashes (/) from define album to prevent path traversal.
-$gallery = str_replace(chr(47), '', $gallery);
-//You can now disable multiple folders from showing up in the list.
+//$gallery = str_replace(chr(47), '', $gallery);
+$gallery = rtrim($gallery, '/');
+// You can now disable multiple folders from showing up in the list.
 $disable = array("cache", "folder2", "folder3");
 ?>
 <!DOCTYPE html>
@@ -70,7 +73,7 @@ $disable = array("cache", "folder2", "folder3");
             <div class="well">
                 <ul class="nav nav-list">
                     <?php
-                    $dirs = array_filter(glob('*'), 'is_dir');
+                    $dirs = get_dirs();
                     foreach ($dirs as $key => $value) {
                         if (in_array($value, $disable) === FALSE) {
                             //This is not set to work if you didn't have an nginx/apache2 rewrite rule for folders
@@ -88,17 +91,21 @@ $disable = array("cache", "folder2", "folder3");
             <?php
             $imgdir = $gallery . '/';
             $allowed_types = array('png', 'jpg', 'jpeg', 'gif');
-            $dimg = opendir($imgdir);
-            $a_img = [];
-            while ($imgfile = readdir($dimg)) {
-                if (in_array(strtolower(substr($imgfile, -3)), $allowed_types) OR
-                    in_array(strtolower(substr($imgfile, -4)), $allowed_types)) {
-                    $a_img[] = $imgfile;
+            if (is_dir($imgdir)) {
+                $dimg = opendir($imgdir);
+                $a_img = [];
+                while ($imgfile = readdir($dimg)) {
+                    if (in_array(strtolower(substr($imgfile, -3)), $allowed_types) OR
+                        in_array(strtolower(substr($imgfile, -4)), $allowed_types)) {
+                        $a_img[] = $imgfile;
+                    }
                 }
-            }
-            $totimg = count($a_img);
-            foreach ($a_img as $img) {
-                echo "<a href='" . $imgdir . $img . "' rel='gallery'><img src='thumb.php?file=$imgdir" . $img . "' /></a>";
+                $totimg = count($a_img);
+                foreach ($a_img as $img) {
+                    echo "<a href='" . $imgdir . $img . "' rel='gallery'><img src='thumb.php?file=$imgdir" . $img . "' /></a>";
+                }
+            } else {
+                echo '<div class="alert alert-warning" role="alert">Folder does not exist</div>';
             }
             ?>
         </div>
