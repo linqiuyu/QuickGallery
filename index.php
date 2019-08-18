@@ -5,8 +5,6 @@ $gallery = isset($_GET['gallery']) ? $_GET['gallery'] : '.';
 // Removes all forward slashes (/) from define album to prevent path traversal.
 //$gallery = str_replace(chr(47), '', $gallery);
 $gallery = trim($gallery, '/');
-// You can now disable multiple folders from showing up in the list.
-$disable = array("cache", "folder2", "folder3");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,7 +25,7 @@ $disable = array("cache", "folder2", "folder3");
         }
 
         .active {
-            color: #eee11f;
+            color: #ee8531;
         }
 
         h1 {
@@ -72,9 +70,8 @@ $disable = array("cache", "folder2", "folder3");
             <div class="well">
                 <?php
                 $list = dir_list($gallery);
-                nav_list($list, $gallery);
+                nav_list($list, $gallery, ['./cache', './assets']);
                 ?>
-
             </div>
             <p style="text-align: center;"><a href="https://github.com/mojeda/QuickGallery" target="_blank">Quick
                     Gallery</a> by <a href="http://www.mojeda.com/" target="_blank">Michael Ojeda</a></p>
@@ -82,7 +79,7 @@ $disable = array("cache", "folder2", "folder3");
         <div class="col-md-10 gallery">
             <?php
             $imgdir = $gallery . '/';
-            $allowed_types = array('png', 'jpg', 'jpeg', 'gif');
+            $allowed_types = ['png', 'jpg', 'jpeg', 'gif'];
             if (is_dir($imgdir)) {
                 $dimg = opendir($imgdir);
                 $a_img = [];

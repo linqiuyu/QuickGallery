@@ -6,6 +6,7 @@
  * @return array
  */
 function get_dirs($dir = '.') {
+    $dir = str_replace('\\', '/', $dir);
     if (empty($dir)) {
         $dir = '.';
     }
@@ -16,7 +17,7 @@ function get_dirs($dir = '.') {
     $dirs = [];
     $files = array_diff(scandir($dir), array('.', '..', '.git', '.idea'));
     foreach ($files as $file) {
-        $path = $dir . DIRECTORY_SEPARATOR . $file;
+        $path = $dir . '/' . $file;
         if (is_dir($path)) {
              $dirs[$path] = $file;
         }
@@ -33,10 +34,10 @@ function get_dirs($dir = '.') {
  * @return bool
  */
 function is_child_dir($dir, $parent_dir) {
-    $dir = ltrim($dir, '.' . DIRECTORY_SEPARATOR);
-    $parent_dir = ltrim($parent_dir, '.' . DIRECTORY_SEPARATOR);
+    $dir = ltrim(str_replace('\\', '/', $dir), './');
+    $parent_dir = ltrim(str_replace('\\', '/', $parent_dir), './');
 
-    if (strpos($dir, $parent_dir . DIRECTORY_SEPARATOR) === 0) {
+    if (strpos($dir, $parent_dir . '/') === 0) {
         return true;
     }
 
@@ -53,7 +54,7 @@ function is_child_dir($dir, $parent_dir) {
 function dir_list($dir, $current_dir = null) {
     $dirs = get_dirs($current_dir);
     foreach ($dirs as $path => $name) {
-        if (is_child_dir($dir . DIRECTORY_SEPARATOR . 'next', $path)) {
+        if (is_child_dir($dir  . '/next', $path)) {
             $dirs[$path] = [
                 'name' => $name,
                 'children' => dir_list($dir, $path),
@@ -65,25 +66,45 @@ function dir_list($dir, $current_dir = null) {
 }
 
 /**
+ * 生成文件列表菜单
+ *
  * @param $list
  * @param $activated
  * @param string $class
+ * @param array $omitted
  */
-function nav_list($list, $activated, $class = 'nav nav-list') {
+function nav_list($list, $activated, $omitted = array(), $class = 'nav nav-list') {
     if (empty($class)) {
         echo '<ul>';
     } else {
         echo '<ul class="' . $class . '">';
     }
     foreach ($list as $path => $name) {
+        if (in_array($path, $omitted)) {
+            continue;
+        }
         echo '<li><a href="index.php?gallery=' . $path . '" ' . (($activated == $path) ? ' class="active"' : '') . '>';
         if (is_array($name)) {
             echo $name['name'] . '</a>';
-            nav_list($name['children'], $activated, null);
+            nav_list($name['children'], $activated, $omitted, null);
         } else {
             echo $name . '</a>';
         }
         echo '</li>';
     }
     echo '</ul>';
+}
+
+/**
+ * 判断文件是否是图片
+ *
+ * @param $filename
+ * @return bool
+ */
+function is_image($filename){
+    if (preg_match('/[\w\/]+.(?:jpg|jpeg|gif|png|bmp)$/i', $filename)) {
+        return true;
+    }
+
+    return false;
 }
