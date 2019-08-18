@@ -1,6 +1,6 @@
 <?php
 /**
- * 获取文件夹列表
+ * 获取目录下的文件夹
  *
  * @param string $dir
  * @return array
@@ -9,7 +9,20 @@ function get_dirs($dir = '.') {
     if (empty($dir)) {
         $dir = '.';
     }
-    return array_diff(scandir($dir), array('.', '..'));
+    if (!is_dir($dir)) {
+        return [];
+    }
+
+    $dirs = [];
+    $files = array_diff(scandir($dir), array('.', '..', '.git', '.idea'));
+    foreach ($files as $file) {
+        $path = $dir . DIRECTORY_SEPARATOR . $file;
+        if (is_dir($path)) {
+             $dirs[$path] = $file;
+        }
+    }
+
+    return $dirs;
 }
 
 /**
@@ -19,33 +32,58 @@ function get_dirs($dir = '.') {
  * @param string $parent_dir
  * @return bool
  */
-function is_belong_to_dir($dir, $parent_dir) {
-    if ($dir == $parent_dir) {
-        return true;
-    }
-    if (is_dir($dir) && in_array($dir, get_dirs($parent_dir))) {
+function is_child_dir($dir, $parent_dir) {
+    $dir = ltrim($dir, '.' . DIRECTORY_SEPARATOR);
+    $parent_dir = ltrim($parent_dir, '.' . DIRECTORY_SEPARATOR);
+
+    if (strpos($dir, $parent_dir . DIRECTORY_SEPARATOR) === 0) {
         return true;
     }
 
     return false;
 }
 
+/**
+ * 生成文件列表
+ *
+ * @param $dir
+ * @param null $current_dir
+ * @return array
+ */
 function dir_list($dir, $current_dir = null) {
-    // 判断当前目录是否和需要的目录在同一级
-    if ($dir == $current_dir) {
-        return get_dirs($current_dir);
+    $dirs = get_dirs($current_dir);
+    foreach ($dirs as $path => $name) {
+        if (is_child_dir($dir . DIRECTORY_SEPARATOR . 'next', $path)) {
+            $dirs[$path] = [
+                'name' => $name,
+                'children' => dir_list($dir, $path),
+            ];
+        }
     }
 
-    $list = [];
-    // 不是同一级往下获取
-    if ($current_dir == null) {
-        $current_dir = '';
-        if ($dir[0] == '/') {
-            $current_dir = '/';
-            $dir = trim($dir);
-        }
-        $current_dir .= substr($dir, 0, strpos($dir, '/') + 1);
-        
-        $list = get_dirs();
+    return $dirs;
+}
+
+/**
+ * @param $list
+ * @param $activated
+ * @param string $class
+ */
+function nav_list($list, $activated, $class = 'nav nav-list') {
+    if (empty($class)) {
+        echo '<ul>';
+    } else {
+        echo '<ul class="' . $class . '">';
     }
+    foreach ($list as $path => $name) {
+        echo '<li><a href="index.php?gallery=' . $path . '" ' . (($activated == $path) ? ' class="active"' : '') . '>';
+        if (is_array($name)) {
+            echo $name['name'] . '</a>';
+            nav_list($name['children'], $activated, null);
+        } else {
+            echo $name . '</a>';
+        }
+        echo '</li>';
+    }
+    echo '</ul>';
 }
